@@ -17,7 +17,7 @@ join='.groups + .channels'
 
 tmp_out="$dir/../tmp"
 err_out="$dir/../err"
-token="$dir/../token"
+token_file="$dir/../token.json"
 
 append=''
 
@@ -35,13 +35,15 @@ main() {
         err 'NO_JQ'
     fi
 
-    if [[ ! -s $token ]]; then
+    if [[ ! -s $token_file ]]; then
         err 'TOK'
     fi
 
-    slack_token="$(cat "$token")"
+    slack_token=$(jq -r '.slack_token' "$token_file")
+    slack_xoxd_token=$(jq -r '.slack_xoxd_token' "$token_file")
+
     if ! test "$(find "$tmp_out" -newermt "$age ago")"; then
-        if js="$(curl -s -d "token=$slack_token" $api)"; then
+        if js="$(curl -s -H "Authorization: Bearer $slack_token" -H "Cookie: d=$slack_xoxd_token" $api)"; then
             case "$(echo "$js" | jq -r '.error')" in
                 null)
                     echo "$js" > "$tmp_out"
